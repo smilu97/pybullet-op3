@@ -15,71 +15,85 @@ class URDFEnv(gym.Env):
     def __init__(
         self,
         urdf_path,
+        joint_indices,
         gravity=9.81,
         fixed_time_step=0.001,
-        num_solver_iterations=100,
+        num_solver_iterations=200,
         num_steps_per_step=5,
-        num_sub_steps=5,
+        num_sub_steps=0,
         contact_erp=0.9,
         disable_gui=True,
         start_z=1.0,
-        urdf_flags=p.URDF_USE_INERTIA_FROM_FILE | p.URDF_USE_IMPLICIT_CYLINDER,
+        urdf_flags=p.URDF_USE_INERTIA_FROM_FILE | p.URDF_USE_SELF_COLLISION_EXCLUDE_ALL_PARENTS,
         p_gains=None,
         v_gains=None
     ):
+
+        self.urdf_flags = urdf_flags
+        self.joint_indices = joint_indices
+        self.start_z = start_z
+        self.gravity = gravity
+        self.contact_erp = contact_erp
+        self.fixed_time_step = fixed_time_step
+        self.num_solver_iterations = num_solver_iterations
+        self.num_sub_steps = num_sub_steps
+        self.urdf_path = urdf_path
 
         physicsClient = p.connect(p.GUI)#or p.DIRECT for non-graphical version
 
         if disable_gui:
             p.configureDebugVisualizer(p.COV_ENABLE_GUI, 0)
-
         p.setAdditionalSearchPath(pybullet_data.getDataPath()) #optionally
-        p.setGravity(0, 0, -gravity)
-        p.setDefaultContactERP(contact_erp)
-        p.setPhysicsEngineParameter(
-            fixedTimeStep=fixed_time_step,
-            numSolverIterations=num_solver_iterations,
-            numSubSteps=num_sub_steps
-        )
-
-        plane_id = p.loadURDF("plane.urdf")
-
-        print('urdf path:', urdf_path)
-
-        start_pos = [0, 0, start_z]
-        start_orientation = p.getQuaternionFromEuler([0,0,0])
-        self.robot_id = p.loadURDF(urdf_path, start_pos, start_orientation, flags=urdf_flags)
-
+        
+        self._spawn()
+        self._setPhysicsParameters()
+        
         self.num_joints = p.getNumJoints(self.robot_id)
-        joint_infos = [p.getJointInfo(self.robot_id, i) for i in range(self.num_joints)]
-        num_links = p.getLinkStates
 
-        self.p_gains = p_gains or np.full((self.num_joints,), 20.0)
-        self.v_gains = v_gains or np.full((self.num_joints,), 0.0)
-        self.full_indices = list(range(self.num_joints))
+        n = len(self.joint_indices)
+        self.p_gains = p_gains or np.full((n,), 0.0001)
+        self.v_gains = v_gains or np.full((n,), 0.0001)        
         self.num_steps_per_step = num_steps_per_step
 
     def step(self, action):
         p.setJointMotorControlArray(
             self.robot_id,
-            self.full_indices,
+            self.joint_indices,
             p.POSITION_CONTROL,
+            # forces=action,
             targetPositions=action,
-            positionGains=self.p_gains
+            positionGains=self.p_gains,
+            velocityGains=self.v_gains
         )
 
         for _ in range(self.num_steps_per_step):
             p.stepSimulation()
-        
-        joint_states = p.getJointStates(self.robot_id, self.full_indices)
-        joint_positions  = [x[0] for x in joint_states]
-        joint_velocities = [x[1] for x in joint_states]
+            
+        return [], False
     
-    def get_contacts():
+    def get_contacts(self):
         return p.getContactPoints(self.robot_id)
 
     def reset(self):
-        pass
+        p.resetSimulation()
+        self._spawn()
+        self._setPhysicsParameters()
+
+    def _spawn(self):
+        p.loadURDF("plane.urdf")
+
+        start_pos = [0, 0, self.start_z]
+        start_orientation = p.getQuaternionFromEuler([0,0,0])
+        self.robot_id = p.loadURDF(self.urdf_path, start_pos, start_orientation, flags=self.urdf_flags, globalScaling=5.0)
+    
+    def _setPhysicsParameters(self):
+        p.setDefaultContactERP(self.contact_erp)
+        p.setGravity(0, 0, -self.gravity)
+        p.setPhysicsEngineParameter(
+            fixedTimeStep=self.fixed_time_step,
+            numSolverIterations=self.num_solver_iterations,
+            numSubSteps=self.num_sub_steps
+        )
 
     def render(self, mode='human'):
         pass

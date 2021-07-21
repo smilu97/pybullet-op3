@@ -13,7 +13,7 @@ from gym.utils import seeding
 from .urdf_env import URDFEnv
 
 class XacroURDFEnv(URDFEnv):
-    def __init__(self, filepath, **kwargs):
+    def __init__(self, filepath, joint_indices, **kwargs):
         doc = xacro.process_file(filepath)
         urdf_content = doc.toprettyxml(indent='  ')
         
@@ -33,4 +33,4 @@ class XacroURDFEnv(URDFEnv):
         fd.write(urdf_content)
         fd.close()
 
-        super().__init__(tmp_filepath, **kwargs)
+        super().__init__(tmp_filepath, joint_indices, **kwargs)
