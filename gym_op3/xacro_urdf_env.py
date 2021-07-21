@@ -5,6 +5,8 @@ import xacro
 import random
 import os
 import pathlib
+import hashlib
+
 from gym import error, spaces, utils
 from gym.utils import seeding
 
@@ -15,9 +17,13 @@ class XacroURDFEnv(URDFEnv):
         doc = xacro.process_file(filepath)
         urdf_content = doc.toprettyxml(indent='  ')
         
-        random_index = random.randint(1000000, 9999999)
+        m = hashlib.sha256()
+        m.update(bytes(urdf_content, 'utf-8'))
+        h = m.digest()[-3:]
+        content_hash = (h[0] << 16) | (h[1] << 8) | h[2]
+
         current_dir = pathlib.Path(__file__).resolve().parent
-        tmp_filename = 'xacro_urdf_output_{}.urdf.tmp'.format(random_index)
+        tmp_filename = 'xacro_urdf_output_{}.urdf.tmp'.format(content_hash)
         tmp_filepath = os.path.join(current_dir, tmp_filename)
 
         if os.path.exists(tmp_filepath):
