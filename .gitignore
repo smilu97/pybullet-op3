@@ -1,1 +1,3 @@
 tmp_op3.urdf
+**/*.tmp
+**/__pycache__/
