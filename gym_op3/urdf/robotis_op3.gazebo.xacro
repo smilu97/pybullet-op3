@@ -270,7 +270,7 @@
 
   <!-- head camera -->
 
-  <gazebo reference="cam_gazebo_link">
+  <!-- <gazebo reference="cam_gazebo_link">
     <sensor name='camera' type='camera'>
       <pose>-0.050000 -0.010000 0.000000 -1.5708 0.000000 -3.141592</pose>
       <camera name='__default__'>
@@ -302,7 +302,7 @@
         <distortionT2>0.0</distortionT2>
       </plugin>
     </sensor>
-  </gazebo>
+  </gazebo> -->
 
 
   <!-- imu sensor -->
