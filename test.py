@@ -34,7 +34,7 @@ while True:
     else:
         action = np.zeros(12)
         action[test_joint] = min(1.0, i * 0.01)
-    obs, reward, done = env.step(action)
+    obs, reward, done, _ = env.step(action)
     if done:
         env.reset()
         i = -1
