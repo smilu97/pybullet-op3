@@ -93,7 +93,5 @@ class OP3Env(XacroURDFEnv):
         rewards = [progress, alive, outroute, effort]
         reward = sum(rewards)
 
-        print('height:', height)
-
-        return obs, reward, height < 0.6
+        return np.array(obs, dtype=np.float64), reward, height < 0.6, {}
         
